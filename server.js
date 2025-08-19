@@ -3,7 +3,8 @@ const app = express();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const allowedOrigins = [   // local frontend
-  "https://stripe-integration-frontend-rouge.vercel.app"   // deployed frontend
+  "https://stripe-integration-frontend-rouge.vercel.app"  ,
+  "http://localhost:5173" // deployed frontend
 ];
 const routes = require('./Routes/paymentRoutes');
 require("./Config/db");

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../Model/user');
 const jwt = require('jsonwebtoken');
+const Payment  = require('../Model/paymentDetails')
 
 exports.user = async (req, res) => {
   try {
@@ -46,7 +47,6 @@ exports.user = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-console.log(email,password);
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -67,6 +67,12 @@ console.log(email,password);
 , // 🔑 keep secret in .env
       { expiresIn: "1h" } // token validity (1 hour)
     );
+  res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "None",
+  maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
+});
 
     return res.status(200).json({
       message: "Login successful",
@@ -90,7 +96,6 @@ exports.payment = () =>{
 
 // controllers/paymentController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const Payment = require('../Model/paymentDetails'); // schema we created earlier
 
 // Map your plans to Stripe price IDs
 const planPrices = {
@@ -106,8 +111,8 @@ exports.createCheckoutSession = async (req, res) => {
   try {
     const { planId, role } = req.body; // plan = "counselor_1m" (key, not Stripe ID)
     const userId = req.user;
-    console.log(planId,role);
-    
+    console.log("inside");
+  
 
     if (!planId || !planPrices[planId]) {
       return res.status(400).json({ message: "Invalid plan selected" });

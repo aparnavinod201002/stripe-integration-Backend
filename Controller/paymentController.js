@@ -144,8 +144,46 @@ exports.createCheckoutSession = async (req, res) => {
 
 const Subscription = require("../Model/paymentDetails");
 
+// exports.stripeWebhook = async (req, res) => {
+//   const sig = req.headers['stripe-signature'];
+
+//   let event;
+//   try {
+//     event = stripe.webhooks.constructEvent(
+//       req.body,
+//       sig,
+//       process.env.STRIPE_WEBHOOK_SECRET
+//     );
+//   } catch (err) {
+//     console.error("⚠️ Webhook signature verification failed.", err.message);
+//     return res.status(400).send(`Webhook Error: ${err.message}`);
+//   }
+
+//   if (event.type === "checkout.session.completed") {
+//     const session = event.data.object;
+
+//     try {
+//       const subscription = new Subscription({
+//         userId: session.metadata.userId,
+//         role: session.metadata.role,
+//         plan: session.metadata.planId,   // ✅ Save plan (your key like counselor_1m)
+//         stripePriceId: session.line_items?.[0]?.price || null, // ✅ Save actual priceId
+//         stripeSessionId: session.id,
+//         paymentStatus: session.payment_status,
+//       });
+
+//       await subscription.save();
+//       console.log("✅ Subscription saved to DB:", subscription);
+//     } catch (err) {
+//       console.error("Error saving subscription:", err);
+//     }
+//   }
+
+//   res.json({ received: true });
+// };
+
 exports.stripeWebhook = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
+  const sig = req.headers["stripe-signature"];
 
   let event;
   try {
@@ -159,26 +197,34 @@ exports.stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // Handle events
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
     try {
+      // ✅ Fetch line items (Stripe does not include them by default)
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+        limit: 1,
+      });
+
+      const priceId = lineItems.data[0]?.price?.id || null;
+
+      // ✅ Save subscription to DB
       const subscription = new Subscription({
         userId: session.metadata.userId,
         role: session.metadata.role,
-        plan: session.metadata.planId,   // ✅ Save plan (your key like counselor_1m)
-        stripePriceId: session.line_items?.[0]?.price || null, // ✅ Save actual priceId
+        plan: session.metadata.planId, // your internal plan key
+        stripePriceId: priceId,        // actual Stripe Price ID
         stripeSessionId: session.id,
-        paymentStatus: session.payment_status,
+        paymentStatus: session.payment_status, // usually "paid"
       });
 
       await subscription.save();
       console.log("✅ Subscription saved to DB:", subscription);
     } catch (err) {
-      console.error("Error saving subscription:", err);
+      console.error("❌ Error saving subscription:", err);
     }
   }
 
   res.json({ received: true });
 };
-

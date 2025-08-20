@@ -145,9 +145,9 @@ exports.createCheckoutSession = async (req, res) => {
 const Subscription = require("../Model/paymentDetails");
 
 exports.stripeWebhook = async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
+  const sig = req.headers['stripe-signature'];
 
+  let event;
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -155,7 +155,7 @@ exports.stripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
+    console.error("⚠️ Webhook signature verification failed.", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -165,27 +165,20 @@ exports.stripeWebhook = async (req, res) => {
     try {
       const subscription = new Subscription({
         userId: session.metadata.userId,
-        plan: session.metadata.plan,
-        stripeCustomerId: session.customer,
-        stripeSubscriptionId: session.subscription,
-        stripePriceId: session.metadata.priceId,
-        paymentIntentId: session.payment_intent,
-        status: "active",
-        startDate: new Date(),
+        role: session.metadata.role,
+        plan: session.metadata.planId,   // ✅ Save plan (your key like counselor_1m)
+        stripePriceId: session.line_items?.[0]?.price || null, // ✅ Save actual priceId
+        stripeSessionId: session.id,
+        paymentStatus: session.payment_status,
       });
 
       await subscription.save();
-
-      await User.findByIdAndUpdate(session.metadata.userId, {
-        subscriptionPlan: session.metadata.plan,
-        subscriptionStatus: "active",
-      });
-
-      console.log("✅ Subscription saved in DB:", subscription);
-    } catch (error) {
-      console.error("❌ Error saving subscription:", error);
+      console.log("✅ Subscription saved to DB:", subscription);
+    } catch (err) {
+      console.error("Error saving subscription:", err);
     }
   }
 
   res.json({ received: true });
 };
+

@@ -42,13 +42,6 @@ const subscriptionSchema = new mongoose.Schema(
     endDate: {
       type: Date,
     },
-
-    latestInvoiceId: {
-      type: String,
-    },
-    paymentIntentId: {
-      type: String,
-    },
   },
   {
     timestamps: true, // auto add createdAt, updatedAt

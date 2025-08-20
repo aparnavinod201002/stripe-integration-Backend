@@ -219,8 +219,7 @@ const subscription = new Subscription({
   stripeSessionId: session.id, 
   stripeCustomerId: session.customer,           // ✅ customer id
   status: "active",     
-    latestInvoiceId: invoiceId,        // comes from session.invoice
-    paymentIntentId: paymentIntentId,                         // default active after payment
+   
 });
 await subscription.save();
 

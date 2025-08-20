@@ -145,7 +145,7 @@ exports.createCheckoutSession = async (req, res) => {
 
 exports.stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
-    console.log("inside hook");
+    console.log("inside web hook");
 
   let event;
   try {

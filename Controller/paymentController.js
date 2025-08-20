@@ -210,14 +210,20 @@ exports.stripeWebhook = async (req, res) => {
       const priceId = lineItems.data[0]?.price?.id || null;
 
       // ✅ Save subscription to DB
-      const subscription = new Subscription({
-        userId: session.metadata.userId,
-        role: session.metadata.role,
-        plan: session.metadata.planId, // your internal plan key
-        stripePriceId: priceId,        // actual Stripe Price ID
-        stripeSessionId: session.id,
-        paymentStatus: session.payment_status, // usually "paid"
-      });
+     // ✅ Save subscription to DB
+const subscription = new Subscription({
+  userId: session.metadata.userId,
+  plan: session.metadata.planId, // your internal plan key
+  stripePriceId: priceId,        // actual Stripe Price ID
+  stripeSubscriptionId: session.subscription,   // ✅ correct way (from session)
+  stripeSessionId: session.id, 
+  stripeCustomerId: session.customer,           // ✅ customer id
+  status: "active",     
+    latestInvoiceId: invoiceId,        // comes from session.invoice
+    paymentIntentId: paymentIntentId,                         // default active after payment
+});
+await subscription.save();
+
 
       await subscription.save();
       console.log("✅ Subscription saved to DB:", subscription);

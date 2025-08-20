@@ -21,7 +21,9 @@ const subscriptionSchema = new mongoose.Schema(
       type: String, // which plan price (3m/6m/1y)
       required: true,
     },
-
+    stripeSessionId: {
+      type: String,
+    },
     plan: {
       type: String,
             required: true,

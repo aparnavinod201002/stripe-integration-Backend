@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../Model/user');
 const jwt = require('jsonwebtoken');
-const Payment  = require('../Model/paymentDetails')
 
 exports.user = async (req, res) => {
   try {
@@ -143,14 +142,15 @@ exports.createCheckoutSession = async (req, res) => {
 //
 // controllers/webhookController.js
 
+const Subscription = require("../Model/paymentDetails");
+
 exports.stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
-    console.log("inside web hook");
-
   let event;
+
   try {
     event = stripe.webhooks.constructEvent(
-      req.body, // 👈 raw body is required, not parsed JSON
+      req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
@@ -159,35 +159,31 @@ exports.stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle successful checkout session
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
     try {
-      // Save payment in DB
-     const payment = new Payment({
-      userId: session.metadata.userId,
-      plan: session.metadata.plan,
-      stripeSessionId: session.id,
-      stripeCustomerId: session.customer,
-      stripeSubscriptionId: session.subscription,
-      stripePriceId: session.metadata.priceId,
-      paymentIntentId: session.payment_intent,
-      status: "completed",
-      startDate: new Date(),
-      rawStripeResponse: session, // optional
-    });
-      await payment.save();
+      const subscription = new Subscription({
+        userId: session.metadata.userId,
+        plan: session.metadata.plan,
+        stripeCustomerId: session.customer,
+        stripeSubscriptionId: session.subscription,
+        stripePriceId: session.metadata.priceId,
+        paymentIntentId: session.payment_intent,
+        status: "active",
+        startDate: new Date(),
+      });
 
-      // (Optional) Update user details after payment
+      await subscription.save();
+
       await User.findByIdAndUpdate(session.metadata.userId, {
         subscriptionPlan: session.metadata.plan,
         subscriptionStatus: "active",
       });
 
-      console.log("✅ Payment saved in DB:", payment);
+      console.log("✅ Subscription saved in DB:", subscription);
     } catch (error) {
-      console.error("❌ Error saving payment:", error);
+      console.error("❌ Error saving subscription:", error);
     }
   }
 

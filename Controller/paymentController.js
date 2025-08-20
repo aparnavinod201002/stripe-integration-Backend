@@ -140,7 +140,7 @@ exports.createCheckoutSession = async (req, res) => {
   }
 };
 //
-// controllers/webhookController.js
+// controller/webhookController.js
 
 const Subscription = require("../Model/paymentDetails");
 

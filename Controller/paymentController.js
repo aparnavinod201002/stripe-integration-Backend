@@ -111,7 +111,7 @@ exports.createCheckoutSession = async (req, res) => {
   try {
     const { planId, role } = req.body; // plan = "counselor_1m" (key, not Stripe ID)
     const userId = req.user;
-    console.log("inside");
+    console.log("inside hook");
   
 
     if (!planId || !planPrices[planId]) {
@@ -145,11 +145,12 @@ exports.createCheckoutSession = async (req, res) => {
 
 exports.stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
+    console.log("inside hook");
 
   let event;
   try {
     event = stripe.webhooks.constructEvent(
-      req.rawBody, // 👈 raw body is required, not parsed JSON
+      req.body, // 👈 raw body is required, not parsed JSON
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );

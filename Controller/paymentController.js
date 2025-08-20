@@ -182,62 +182,10 @@ const Subscription = require("../Model/paymentDetails");
 //   res.json({ received: true });
 // };
 
-// exports.stripeWebhook = async (req, res) => {
-//   const sig = req.headers["stripe-signature"];
-
-//   let event;
-//   try {
-//     event = stripe.webhooks.constructEvent(
-//       req.body,
-//       sig,
-//       process.env.STRIPE_WEBHOOK_SECRET
-//     );
-//   } catch (err) {
-//     console.error("⚠️ Webhook signature verification failed.", err.message);
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-//   // Handle events
-//   if (event.type === "checkout.session.completed") {
-//     const session = event.data.object;
-
-//     try {
-//       // ✅ Fetch line items (Stripe does not include them by default)
-//       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-//         limit: 1,
-//       });
-
-//       const priceId = lineItems.data[0]?.price?.id || null;
-
-//       // ✅ Save subscription to DB
-//      // ✅ Save subscription to DB
-// const subscription = new Subscription({
-//   userId: session.metadata.userId,
-//   plan: session.metadata.planId, // your internal plan key
-//   stripePriceId: priceId,        // actual Stripe Price ID
-//   stripeSubscriptionId: session.subscription,   // ✅ correct way (from session)
-//   stripeSessionId: session.id, 
-//   stripeCustomerId: session.customer,           // ✅ customer id
-//   status: "active",     
-   
-// });
-// await subscription.save();
-
-
-//       await subscription.save();
-//       console.log("✅ Subscription saved to DB:", subscription);
-//     } catch (err) {
-//       console.error("❌ Error saving subscription:", err);
-//     }
-//   }
-
-//   res.json({ received: true });
-// };
-
 exports.stripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
-  let event;
 
+  let event;
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -249,39 +197,35 @@ exports.stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Handle checkout.session.completed event
+  // Handle events
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
     try {
-      // ✅ Fetch line items (Stripe doesn’t include them by default)
+      // ✅ Fetch line items (Stripe does not include them by default)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
         limit: 1,
       });
+
       const priceId = lineItems.data[0]?.price?.id || null;
 
-      // ✅ Fetch subscription from Stripe (to get start & end dates)
-      const stripeSub = await stripe.subscriptions.retrieve(session.subscription);
-
-      const startDate = new Date(stripeSub.current_period_start * 1000); // Unix → JS Date
-      const endDate = new Date(stripeSub.current_period_end * 1000);
-
       // ✅ Save subscription to DB
-      const subscription = new Subscription({
-        userId: session.metadata.userId,
-        plan: session.metadata.planId,             // Your internal plan key
-        stripePriceId: priceId,                    // Actual Stripe Price ID
-        stripeSubscriptionId: session.subscription,
-        stripeSessionId: session.id,
-        stripeCustomerId: session.customer,
-        status: "active",
-        startDate: startDate,
-        endDate: endDate,
-      });
+     // ✅ Save subscription to DB
+const subscription = new Subscription({
+  userId: session.metadata.userId,
+  plan: session.metadata.planId, // your internal plan key
+  stripePriceId: priceId,        // actual Stripe Price ID
+  stripeSubscriptionId: session.subscription,   // ✅ correct way (from session)
+  stripeSessionId: session.id, 
+  stripeCustomerId: session.customer,           // ✅ customer id
+  status: "active",     
+   
+});
+await subscription.save();
+
 
       await subscription.save();
       console.log("✅ Subscription saved to DB:", subscription);
-
     } catch (err) {
       console.error("❌ Error saving subscription:", err);
     }

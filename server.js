@@ -7,6 +7,7 @@ const allowedOrigins = [   // local frontend
   "http://localhost:5173" // deployed frontend
 ];
 const routes = require('./Routes/paymentRoutes');
+const webhookRouter = require('./Routes/webHooks')
 require("./Config/db");
 app.use(cors({
   origin: function (origin, callback) {
@@ -18,6 +19,8 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use("/payment", webhookRouter); // raw body
+
 app.use(express.json());
 app.use(cookieParser());
 
